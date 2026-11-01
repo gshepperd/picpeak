@@ -1,6 +1,7 @@
 const { db } = require('../database/db');
 const logger = require('./logger');
 const { isUnitedStates } = require('./postalAddress');
+const { parseCalendarDate } = require('./dateNormalize');
 
 // Default date format settings
 const DEFAULT_FORMAT = {
@@ -29,23 +30,8 @@ async function formatDate(date, language = 'en') {
       }
     }
     
-    // Ensure proper date parsing
-    let dateObj;
-    if (date instanceof Date) {
-      dateObj = date;
-    } else if (typeof date === 'string') {
-      // For date strings like "2025-07-16", parse as local date to avoid timezone issues
-      if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // Parse YYYY-MM-DD format as local date
-        const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
-        dateObj = new Date(year, month - 1, day);
-      } else {
-        dateObj = new Date(date);
-      }
-    } else {
-      dateObj = new Date(date);
-    }
-    
+    const dateObj = parseCalendarDate(date);
+
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
       logger.error('Invalid date provided to formatDate:', date);
@@ -119,7 +105,7 @@ async function formatDate(date, language = 'en') {
  */
 function formatShortDate(value, issuerCountryCode = null) {
   if (!value) return '';
-  const d = value instanceof Date ? value : new Date(value);
+  const d = parseCalendarDate(value);
   if (Number.isNaN(d.getTime())) return String(value);
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');

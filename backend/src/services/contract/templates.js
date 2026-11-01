@@ -71,6 +71,7 @@ function loadItems(versionId, conn = db) {
       'it.*',
       'blk.slug as block_slug',
       'blk.name as block_name',
+      'blk.is_system as block_is_system',
       'blk.is_active as block_is_active',
       'blk.body_text as block_body_text',
       'blk.body_text_de as block_body_text_de',

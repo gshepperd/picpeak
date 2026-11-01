@@ -7,7 +7,8 @@
  * business's.
  */
 import { describe, it, expect } from 'vitest';
-import { buildPayload, newQuoteForm, languageForCustomer } from '../QuoteEditorPage';
+import { buildPayload, newQuoteForm, languageForCustomer, languageAfterCustomerChange } from '../QuoteEditorPage';
+import { currencyOptions } from '../../../../constants/currencies';
 
 describe('a new quote', () => {
   it('starts in the business\'s currency', () => {
@@ -20,6 +21,22 @@ describe('a new quote', () => {
 
   it('carries no language of its own, so the server picks the customer\'s or the business\'s', () => {
     expect(buildPayload(newQuoteForm({ defaultCurrency: 'USD' })).language).toBeFalsy();
+  });
+});
+
+describe('changing the customer', () => {
+  it('drops the language the last customer brought to a new quote', () => {
+    expect(languageAfterCustomerChange('en', false)).toBe('');
+  });
+
+  it('keeps the language of a saved quote', () => {
+    expect(languageAfterCustomerChange('fr', true)).toBe('fr');
+  });
+});
+
+describe('the currency select', () => {
+  it('offers the business\'s currency, whichever Settings allows', () => {
+    expect(currencyOptions('SEK')).toContain('SEK');
   });
 });
 

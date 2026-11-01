@@ -30,6 +30,7 @@ const { SwissQRBill, Table } = require('swissqrbill/pdf');
 const { t, documentLocale } = require('./pdf-i18n');
 const { cityLine, printsCountryLine, isUnitedStates } = require('../utils/postalAddress');
 const { issuerIntlLocale } = require('../utils/issuerIntlLocale');
+const { parseCalendarDate } = require('../utils/dateNormalize');
 const { parsePromotionSnapshot } = require('../utils/lineItemTotals');
 const { parseInlineMarkdown } = require('../utils/placeholders');
 const pdfFonts = require('./pdf/fonts');
@@ -371,7 +372,7 @@ function formatCurrencyLabel(currency) {
 
 function formatDate(value, dateFormat) {
   if (!value) return '';
-  const d = (value instanceof Date) ? value : new Date(value);
+  const d = parseCalendarDate(value);
   if (Number.isNaN(d.getTime())) return '';
   // Respect the `general_date_format` app setting (read once in the
   // service layer and passed through ctx.dateFormat). We build the

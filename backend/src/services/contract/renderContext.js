@@ -324,6 +324,21 @@ async function buildContentSnapshot(contract, inclusions, textSections = []) {
 }
 
 /**
+ * Clause headings in the contract's own language (format 4): every language
+ * but German, for a contract not yet sent or sent since.
+ */
+function headsClausesByTitle(contract, snapshot, locale) {
+  return locale !== 'de' && (snapshot ? ensureInt(snapshot.format) >= 4 : !contract.sent_at);
+}
+
+/** The heading a seeded clause's text gives itself, where format 4 uses it. */
+function clauseTitle(contract, locale, text) {
+  if (!headsClausesByTitle(contract, parseContentSnapshot(contract.rendered_content), locale)) return null;
+  const title = (String(text || '').match(LEADING_TITLE) || [])[1];
+  return title ? title.trim() : null;
+}
+
+/**
  * The title, intro, outro and sections a contract shows in a language,
  * placeholders filled in: from the sent snapshot when there is one, else
  * from the live draft. Shared by the PDF and the customer's signing page.
@@ -346,9 +361,7 @@ async function resolveDisplayContent(contract, inclusions, textSections, locale,
   // knew only `**bold**`), so it is doubled for the escape-aware parser. That
   // includes one sent before snapshots existed at all (no rendered_content).
   const legacy = snapshot ? ensureInt(snapshot.format) < 3 : !!contract.sent_at;
-  // Clause headings in the contract's own language (format 4): every
-  // language but German, for a contract not yet sent or sent since.
-  const titledHeadings = locale !== 'de' && (snapshot ? ensureInt(snapshot.format) >= 4 : !contract.sent_at);
+  const titledHeadings = headsClausesByTitle(contract, snapshot, locale);
   const render = (template) => {
     const out = renderTemplatedBody(template, placeholders, { output: legacy ? 'text' : 'markdown' });
     return legacy && typeof out === 'string' ? out.replace(/\\/g, '\\\\') : out;
@@ -555,6 +568,7 @@ module.exports = {
   buildContentSnapshot,
   buildQuoteSnapshot,
   resolveDisplayContent,
+  clauseTitle,
   orderedClauses,
   parseContentSnapshot,
 };

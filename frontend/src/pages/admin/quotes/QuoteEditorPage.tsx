@@ -151,6 +151,15 @@ export function languageForCustomer(current: string, customer: { preferredLangua
   return current || customer.preferredLanguage || '';
 }
 
+/**
+ * A new quote has no language of its own, so changing the customer drops the
+ * one the last customer brought and the server takes the new one's. A saved
+ * quote keeps its language.
+ */
+export function languageAfterCustomerChange(current: string, isEdit: boolean): string {
+  return isEdit ? current : '';
+}
+
 // A field the admin cleared is sent as null so the save clears it: undefined
 // drops the key from the request, and the server kept the old value.
 // validUntil, the payment-term pickers and the bank account stay undefined
@@ -628,9 +637,7 @@ export const QuoteForm = forwardRef<QuoteFormHandle, QuoteFormProps>(({ quoteId,
             customerAccountId: c.id,
             customerLabel: c.companyName || c.displayName || c.email,
             customerIsPassive: Boolean(c.isPassive),
-            // A new quote has no language of its own: the server takes this
-            // customer's, not the one picked before.
-            ...(isEdit ? {} : { language: '' }),
+            language: languageAfterCustomerChange(f.language, isEdit),
           }))}
           onCreate={(c) => setForm((f) => ({
             ...f,
@@ -643,7 +650,7 @@ export const QuoteForm = forwardRef<QuoteFormHandle, QuoteFormProps>(({ quoteId,
           }))}
           onClear={() => setForm((f) => ({
             ...f, customerAccountId: null, customerLabel: '', customerIsPassive: false,
-            ...(isEdit ? {} : { language: '' }),
+            language: languageAfterCustomerChange(f.language, isEdit),
           }))}
           searchPlaceholder={t('quotes.customerSearch', 'Search customer by email or company…') as string}
         />

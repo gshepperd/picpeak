@@ -162,7 +162,7 @@ describe('a contract made from a quote', () => {
       customerAccountId: customerId, language: 'en', currency: 'USD', vatRate: 0,
       lineItems: [{ description: 'Full session', quantity: 1, unitPriceMinor: 17500, kind: 'item' }],
     }, adminId);
-    await db('quotes').where({ id: quoteId.id || quoteId }).update({ status: 'accepted', accepted_at: new Date() });
+    await db('quotes').where({ id: quoteId.id || quoteId }).update({ status: 'accepted', accepted_at: new Date().toISOString() });
     const { contractId } = await require('../../src/services/contractService').createFromQuote(quoteId.id || quoteId, adminId);
     return contractId;
   }
@@ -193,6 +193,34 @@ describe('a retired US clause', () => {
     await db('contract_blocks').where({ slug: 'closing_jurisdiction_us' }).update({ is_active: false });
     const slugs = (await clauses((await createContract()).id)).map((c) => c.slug);
     for (const slug of EUROPEAN_ONLY) expect(slugs).not.toContain(slug);
+  });
+});
+
+describe('headings outside the PDF', () => {
+  beforeAll(() => setCountry('LI'));
+
+  const names = (view) => view.sections.flatMap((section) => section.blocks.map((block) => block.name));
+
+  test('the signing page prints the headings the PDF prints', async () => {
+    const { id } = await createContract({ language: 'en' });
+    const views = require('../../src/services/publicDocumentViews');
+    expect(names(await views.buildContractView(id))).toContain('Subject of contract');
+  });
+
+  test('a contract sent before format 4 keeps its block names there too', async () => {
+    const { id } = await createContract({ language: 'en' });
+    await db('contracts').where({ id }).update({
+      sent_at: new Date().toISOString(), rendered_content: JSON.stringify({ format: 3, clauses: [] }),
+    });
+    const views = require('../../src/services/publicDocumentViews');
+    expect(names(await views.buildContractView(id))).not.toContain('Subject of contract');
+  });
+
+  test('the template preview prints the headings the contract will', async () => {
+    const templates = require('../../src/services/contract/templates');
+    const version = await templates.resolveVersionForNewContract(null);
+    const clause = version.items.find((item) => item.block_slug === 'basics_service');
+    expect(Boolean(clause.block_is_system)).toBe(true);
   });
 });
 

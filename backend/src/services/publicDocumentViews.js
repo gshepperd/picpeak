@@ -12,6 +12,7 @@ const { db } = require('../database/db');
 const { getAppSetting } = require('../utils/appSettings');
 const { isTruthyFlag, isUnselectedOptional, parsePromotionSnapshot } = require('../utils/lineItemTotals');
 const { toTimestamp } = require('../utils/dateNormalize');
+const { clauseTitle } = require('./contract/renderContext');
 
 // Normalise a Settings → Branding logo value (absolute URL, /-rooted path,
 // or bare `uploads/...` filename) into a URL the public page can load.
@@ -46,7 +47,8 @@ function publicContractView(contract, inclusions, customer, profile, locale, bra
     //    page renders body as plain `whitespace-pre-line` text and
     //    has no inline-bold UI. The PDF path keeps them as bold
     //    runs via pdfService.renderBodyMarkdown.
-    const body = (locale === 'de' ? (bodyDe || bodyEn) : (bodyEn || bodyDe))
+    const text = locale === 'de' ? (bodyDe || bodyEn) : (bodyEn || bodyDe);
+    const body = text
       .replace(/^\s*\*\*[^*\n]+\*\*\s*\n+/, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1');
     if (!blocksBySection[inc.section]) continue;
@@ -54,7 +56,8 @@ function publicContractView(contract, inclusions, customer, profile, locale, bra
       blockId: inc.block_id,
       section: inc.section,
       position: inc.position,
-      name: inc.block_name,
+      // The same heading the PDF prints (renderContext, format 4).
+      name: (isTruthyFlag(inc.block_is_system) && clauseTitle(contract, locale, text)) || inc.block_name,
       body,
     });
   }
